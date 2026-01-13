@@ -10,9 +10,9 @@
   html, body {
     margin: 0;
     padding: 0;
-    background: #050505; /* Very dark grey, almost black */
+    background: #050505; /* Very dark grey */
     overflow: hidden;
-    font-family: 'Fira Code', monospace; /* Coding font */
+    font-family: 'Fira Code', monospace; /* Coding font style */
     touch-action: none;
   }
 
@@ -27,7 +27,7 @@
   /* Container for the text at the bottom */
   #text-container {
     position: absolute;
-    bottom: 5%; /* Position at bottom */
+    bottom: 8%; /* Slightly higher up */
     left: 0;
     width: 100%;
     text-align: center;
@@ -37,23 +37,25 @@
 
   /* The glowing text style */
   #typewriter {
-    font-size: clamp(20px, 5vw, 40px); /* Responsive size */
+    font-size: clamp(22px, 6vw, 45px); /* Responsive size, slightly bigger */
     color: #ff4d6d;
-    text-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff0040; /* The Glow Effect */
+    text-shadow: 0 0 10px #ff4d6d, 0 0 25px #ff0040; /* Stronger Glow */
     display: inline-block;
     white-space: nowrap;
+    font-weight: bold;
+    letter-spacing: 1px;
   }
 
   /* The blinking cursor at the end */
   .cursor {
     display: inline-block;
-    width: 2px;
+    width: 3px;
     height: 1.2em;
     background-color: #ff4d6d;
     margin-left: 5px;
     vertical-align: bottom;
     animation: blink 1s infinite;
-    box-shadow: 0 0 10px #ff4d6d;
+    box-shadow: 0 0 15px #ff4d6d;
   }
 
   @keyframes blink {
@@ -87,8 +89,8 @@
 <body>
 
 <div id="start">
-  <div class="heart-beat" style="font-size: 40px;">❤️</div>
-  <p style="margin-top:10px">Tap to Open</p>
+  <div class="heart-beat" style="font-size: 50px;">❤️</div>
+  <p style="margin-top:15px">Tap for Surbhi</p>
 </div>
 
 <canvas id="c"></canvas>
@@ -119,9 +121,10 @@ let queue = [];
 const message = "Surbhi ❤️ love you"; // The text to type
 let textIndex = 0;
 
-// --- Turtle Functions ---
+// --- Turtle Functions (Tree Drawing) ---
 function resetTurtle() {
-  turtle = { x: canvas.width / 2, y: canvas.height * 0.80, a: -90 }; // Tree starts slightly higher
+  // Start tree from bottom center
+  turtle = { x: canvas.width / 2, y: canvas.height * 0.85, a: -90 }; 
 }
 
 function f(dist, color, width) {
@@ -151,7 +154,7 @@ function dot() {
   queue.push(() => {
     ctx.fillStyle = "#ff0040";
     ctx.beginPath();
-    ctx.arc(turtle.x, turtle.y, 3, 0, Math.PI * 2);
+    ctx.arc(turtle.x, turtle.y, 3.5, 0, Math.PI * 2); // Slightly bigger dots
     ctx.fill();
     ctx.shadowBlur = 15;
     ctx.shadowColor = "#ff0040";
@@ -160,7 +163,7 @@ function dot() {
   });
 }
 
-// --- Recursive Tree ---
+// --- Recursive Tree Logic ---
 function tree(len, depth) {
   if (len < 10 || depth > 10) {
     dot();
@@ -168,7 +171,8 @@ function tree(len, depth) {
   }
 
   let width = Math.max(0.5, len / 15);
-  let color = `hsl(${340 + depth * 2}, 80%, ${50 + depth * 3}%)`;
+  // Color gradients from pink to deep red
+  let color = `hsl(${335 + depth * 3}, 90%, ${60 + depth * 2}%)`;
 
   f(len, color, width);
 
@@ -191,13 +195,14 @@ function typeWriter() {
   if (textIndex < message.length) {
     document.getElementById("typewriter").innerHTML += message.charAt(textIndex);
     textIndex++;
-    setTimeout(typeWriter, 150); // Speed of typing (150ms per letter)
+    // Typing speed (lower number = faster)
+    setTimeout(typeWriter, 120); 
   }
 }
 
-// --- Main Animation Loop ---
-function animate() {
-  // Draw 5 turtle steps per frame for speed
+// --- Main Animation Loop (Tree) ---
+function animateTree() {
+  // Draw multiple steps per frame for smoother speed
   for(let i=0; i<5; i++){
     if (queue.length > 0) {
       let task = queue.shift();
@@ -206,10 +211,7 @@ function animate() {
   }
 
   if (queue.length > 0) {
-    requestAnimationFrame(animate);
-  } else {
-    // Once tree is finished, start typing the text
-    setTimeout(typeWriter, 500);
+    requestAnimationFrame(animateTree);
   }
 }
 
@@ -221,14 +223,17 @@ document.getElementById("start").onclick = function() {
   startScreen.style.opacity = 0;
   setTimeout(() => startScreen.remove(), 1000);
 
-  // Play music
-  audio.volume = 0.5;
+  // 1. Play music
+  audio.volume = 0.6;
   audio.play().catch(console.error);
 
-  // Start Tree
+  // 2. Start drawing the Tree immediately
   resetTurtle();
   tree(canvas.height * 0.20, 0); 
-  animate();
+  animateTree();
+
+  // 3. Start typing the Text immediately (with a tiny 0.5s delay for effect)
+  setTimeout(typeWriter, 500);
 };
 
 </script>
