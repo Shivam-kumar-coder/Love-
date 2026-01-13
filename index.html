@@ -12,7 +12,8 @@
     width: 100%; height: 100%;
     background: #000;
     overflow: hidden;
-    touch-action: none; /* मोबाइल टच को बेहतर बनाने के लिए */
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
   }
 
   canvas {
@@ -21,28 +22,31 @@
     top: 0; left: 0;
   }
 
-  /* मोबाइल के हिसाब से टेक्स्ट की जगह और साइज */
+  /* मोबाइल के लिए ऑप्टिमाइज्ड टेक्स्ट */
   #text-container {
     position: absolute;
-    bottom: 15%; /* मोबाइल पर थोड़ा ऊपर ताकि कीबोर्ड या बटन के पीछे न छुपे */
+    bottom: 12%; 
     left: 0;
     width: 100%;
     text-align: center;
-    z-index: 10;
+    z-index: 20;
+    pointer-events: none;
   }
 
   #typewriter {
     font-family: 'Dancing Script', cursive;
-    font-size: clamp(24px, 7vw, 45px); /* मोबाइल पर अपने आप छोटा हो जाएगा */
+    font-size: clamp(26px, 8vw, 42px);
     color: #ff4d6d;
-    text-shadow: 0 0 10px #ff4d6d, 0 0 25px #ff0040;
-    white-space: nowrap;
+    text-shadow: 0 0 15px #ff4d6d, 0 0 30px #ff0040;
+    display: inline-block;
+    padding: 0 10px;
   }
 
+  /* सुंदर स्टार्ट स्क्रीन */
   #start-screen {
     position: fixed;
     inset: 0;
-    background: radial-gradient(circle, #1a0005 0%, #000 100%);
+    background: radial-gradient(circle, #200005 0%, #000 100%);
     color: #ff4d6d;
     display: flex;
     flex-direction: column;
@@ -50,24 +54,33 @@
     justify-content: center;
     z-index: 100;
     text-align: center;
-    padding: 20px;
+    transition: opacity 1.5s ease;
   }
 
-  .heart-btn {
-    font-size: 80px;
-    animation: pulse 1.2s infinite;
+  .heart-main {
+    font-size: 100px;
+    filter: drop-shadow(0 0 20px #ff0040);
+    animation: pulse 1.5s infinite ease-in-out;
     cursor: pointer;
   }
 
-  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.2); } }
+  @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.15); } }
+
+  .tap-text {
+    font-family: sans-serif;
+    font-size: 14px;
+    letter-spacing: 3px;
+    margin-top: 30px;
+    opacity: 0.8;
+  }
 </style>
 </head>
 
 <body>
 
-<div id="start-screen" onclick="startApp()">
-  <div class="heart-btn">❤️</div>
-  <p style="font-family: sans-serif; letter-spacing: 1px; margin-top: 20px;">SURBHI, TAP THE HEART</p>
+<div id="start-screen" onclick="startExperience()">
+  <div class="heart-main">❤️</div>
+  <div class="tap-text">TAP FOR SURBHI</div>
 </div>
 
 <canvas id="bgCanvas"></canvas>
@@ -90,7 +103,8 @@ const tCtx = tCanvas.getContext("2d");
 let message = "Surbhi ❤️ love you";
 let treeQueue = [];
 let textIndex = 0;
-let hearts = [];
+let floatingHearts = [];
+let particles = [];
 
 function resize() {
   bgCanvas.width = tCanvas.width = window.innerWidth;
@@ -99,18 +113,29 @@ function resize() {
 window.addEventListener("resize", resize);
 resize();
 
-class FloatingHeart {
-  constructor() { this.reset(); }
-  reset() {
-    this.x = Math.random() * bgCanvas.width;
-    this.y = bgCanvas.height + 20;
-    this.size = Math.random() * 12 + 8;
-    this.speed = Math.random() * 1.5 + 0.5;
-    this.opacity = Math.random() * 0.5 + 0.3;
+// बैकग्राउंड में तैरते हुए दिल
+class Heart {
+  constructor(isTouch = false, x = 0, y = 0) {
+    this.reset(isTouch, x, y);
+  }
+  reset(isTouch, x, y) {
+    this.x = isTouch ? x : Math.random() * bgCanvas.width;
+    this.y = isTouch ? y : bgCanvas.height + 20;
+    this.size = isTouch ? Math.random() * 15 + 10 : Math.random() * 10 + 5;
+    this.speedX = isTouch ? (Math.random() - 0.5) * 4 : 0;
+    this.speedY = isTouch ? (Math.random() - 2) * 3 : -(Math.random() * 1 + 0.5);
+    this.opacity = 1;
+    this.isTouch = isTouch;
   }
   update() {
-    this.y -= this.speed;
-    if (this.y < -20) this.reset();
+    this.y += this.speedY;
+    this.x += this.speedX;
+    if (this.isTouch) this.opacity -= 0.015;
+    if (this.y < -20 || this.opacity <= 0) {
+      if (!this.isTouch) this.reset(false);
+      return false;
+    }
+    return true;
   }
   draw() {
     bgCtx.globalAlpha = this.opacity;
@@ -119,24 +144,35 @@ class FloatingHeart {
   }
 }
 
-function startApp() {
-  document.getElementById("start-screen").style.display = "none";
+function startExperience() {
+  document.getElementById("start-screen").style.opacity = "0";
+  setTimeout(() => document.getElementById("start-screen").remove(), 1500);
   document.getElementById("music").play().catch(() => {});
   
-  for(let i=0; i<30; i++) hearts.push(new FloatingHeart());
+  for(let i=0; i<25; i++) floatingHearts.push(new Heart());
   
-  // मोबाइल पर पेड़ की ऊंचाई सेट करना
-  let startX = tCanvas.width / 2;
-  let startY = tCanvas.height * 0.8;
-  let branchLen = tCanvas.height * 0.15; 
+  // मोबाइल फ्रेंडली साइजिंग
+  const isMobile = window.innerWidth < 600;
+  const treeBaseY = tCanvas.height * 0.85;
+  const branchLen = isMobile ? tCanvas.height * 0.12 : tCanvas.height * 0.18;
   
-  drawTree(startX, startY, branchLen, -90, 10);
+  initTree(tCanvas.width / 2, treeBaseY, branchLen, -90, isMobile ? 9 : 10);
   animate();
-  typeText();
+  setTimeout(typeWriter, 1000);
 }
 
-function drawTree(x, y, len, angle, depth) {
-  if (depth === 0) return;
+function initTree(x, y, len, angle, depth) {
+  if (depth === 0) {
+    treeQueue.push(() => {
+      tCtx.fillStyle = "#ff0040";
+      tCtx.shadowBlur = 15;
+      tCtx.shadowColor = "#ff0040";
+      tCtx.beginPath();
+      tCtx.arc(x, y, 3, 0, Math.PI * 2);
+      tCtx.fill();
+    });
+    return;
+  }
 
   treeQueue.push(() => {
     let rad = angle * (Math.PI / 180);
@@ -144,46 +180,60 @@ function drawTree(x, y, len, angle, depth) {
     let ny = y + Math.sin(rad) * len;
 
     tCtx.beginPath();
-    tCtx.strokeStyle = `hsl(340, 100%, ${50 + (10-depth)*2}%)`;
-    tCtx.lineWidth = depth * 0.8;
+    tCtx.strokeStyle = `hsl(345, 100%, ${50 + (10-depth)*3}%)`;
+    tCtx.lineWidth = depth * 0.6;
     tCtx.lineCap = "round";
     tCtx.moveTo(x, y);
     tCtx.lineTo(nx, ny);
     tCtx.stroke();
 
-    // फूलों वाले डॉट्स
-    if (depth < 4) {
-      tCtx.fillStyle = "#ff0040";
-      tCtx.beginPath();
-      tCtx.arc(nx, ny, 3, 0, Math.PI * 2);
-      tCtx.fill();
-    }
-
-    drawTree(nx, ny, len * 0.75, angle - 25, depth - 1);
-    drawTree(nx, ny, len * 0.75, angle + 35, depth - 1);
+    initTree(nx, ny, len * 0.78, angle - 22, depth - 1);
+    initTree(nx, ny, len * 0.78, angle + 28, depth - 1);
   });
 }
 
-function typeText() {
+function typeWriter() {
   if (textIndex < message.length) {
     document.getElementById("typewriter").innerHTML += message.charAt(textIndex);
     textIndex++;
-    setTimeout(typeText, 150);
+    setTimeout(typeWriter, 120);
   }
 }
 
 function animate() {
   bgCtx.clearRect(0, 0, bgCanvas.width, bgCanvas.height);
-  hearts.forEach(h => { h.update(); h.draw(); });
+  
+  // तैरते दिल अपडेट करें
+  floatingHearts = floatingHearts.filter(h => {
+    let alive = h.update();
+    if (alive) h.draw();
+    return alive;
+  });
 
-  // पेड़ धीरे-धीरे उगेगा
+  // टच पार्टिकल्स
+  particles = particles.filter(p => {
+    let alive = p.update();
+    if (alive) p.draw();
+    return alive;
+  });
+
+  // पेड़ की ड्राइंग - मोबाइल पर स्मूथनेस के लिए
   if (treeQueue.length > 0) {
-    let currentBatch = treeQueue.splice(0, 2);
-    currentBatch.forEach(task => task());
+    let steps = Math.min(treeQueue.length, 3);
+    for(let i=0; i<steps; i++) {
+        treeQueue.splice(0, 1)[0]();
+    }
   }
 
   requestAnimationFrame(animate);
 }
+
+// मोबाइल टच इफ़ेक्ट
+window.addEventListener('touchstart', (e) => {
+    for(let i=0; i<5; i++) {
+        particles.push(new Heart(true, e.touches[0].clientX, e.touches[0].clientY));
+    }
+});
 </script>
 </body>
 </html>
