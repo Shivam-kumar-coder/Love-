@@ -8,8 +8,7 @@
   @import url('https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Fira+Code:wght@500&display=swap');
 
   html, body {
-    margin: 0;
-    padding: 0;
+    margin: 0; padding: 0;
     background: #000;
     overflow: hidden;
     touch-action: none;
@@ -18,30 +17,25 @@
   canvas {
     display: block;
     position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 1;
+    top: 0; left: 0;
   }
 
-  /* Container for the text at the bottom */
   #text-container {
     position: absolute;
-    bottom: 10%;
+    bottom: 12%;
     left: 0;
     width: 100%;
     text-align: center;
-    z-index: 2;
+    z-index: 10;
     pointer-events: none;
   }
 
-  /* Stylish Glowing Text */
   #typewriter {
-    font-family: 'Dancing Script', cursive; /* More romantic font */
-    font-size: clamp(28px, 8vw, 50px);
+    font-family: 'Dancing Script', cursive;
+    font-size: clamp(30px, 8vw, 55px);
     color: #ff4d6d;
-    text-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff4d6d, 0 0 40px #ff0040;
+    text-shadow: 0 0 10px #ff4d6d, 0 0 30px #ff0040;
     display: inline-block;
-    white-space: nowrap;
   }
 
   .cursor {
@@ -52,13 +46,9 @@
     margin-left: 5px;
     vertical-align: middle;
     animation: blink 1s infinite;
-    box-shadow: 0 0 10px #ff4d6d;
   }
 
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0; }
-  }
+  @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
 
   #start {
     position: fixed;
@@ -70,16 +60,13 @@
     align-items: center;
     justify-content: center;
     font-family: 'Fira Code', monospace;
-    z-index: 10;
+    z-index: 100;
     cursor: pointer;
     transition: opacity 1.5s;
   }
 
   .heart-beat { animation: beat 1.2s infinite ease-in-out; }
-  @keyframes beat {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.3); text-shadow: 0 0 20px #ff0040; }
-  }
+  @keyframes beat { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.3); } }
 </style>
 </head>
 
@@ -87,10 +74,11 @@
 
 <div id="start">
   <div class="heart-beat" style="font-size: 60px;">❤️</div>
-  <p style="margin-top:20px; letter-spacing: 2px;">TAP TO FEEL THE MAGIC</p>
+  <p style="margin-top:20px; letter-spacing: 2px;">CLICK FOR SURBHI</p>
 </div>
 
-<canvas id="c"></canvas>
+<canvas id="heartCanvas"></canvas>
+<canvas id="treeCanvas"></canvas>
 
 <div id="text-container">
   <span id="typewriter"></span><span class="cursor"></span>
@@ -101,105 +89,92 @@
 </audio>
 
 <script>
-const canvas = document.getElementById("c");
-const ctx = canvas.getContext("2d");
+const hCanvas = document.getElementById("heartCanvas");
+const hCtx = hCanvas.getContext("2d");
+const tCanvas = document.getElementById("treeCanvas");
+const tCtx = tCanvas.getContext("2d");
 
 function resize(){
-  canvas.width = window.innerWidth;
-  canvas.height = window.innerHeight;
+  hCanvas.width = tCanvas.width = window.innerWidth;
+  hCanvas.height = tCanvas.height = window.innerHeight;
 }
 resize();
 window.addEventListener("resize", resize);
 
 let turtle = { x: 0, y: 0, a: -90 };
-let queue = [];
+let treeQueue = [];
 const message = "Surbhi ❤️ love you";
 let textIndex = 0;
 
-// Particle system for floating hearts
-let particles = [];
-class HeartParticle {
-    constructor() {
-        this.reset();
-    }
+// Floating Hearts
+let hearts = [];
+class Heart {
+    constructor() { this.reset(); }
     reset() {
-        this.x = Math.random() * canvas.width;
-        this.y = canvas.height + 20;
+        this.x = Math.random() * hCanvas.width;
+        this.y = hCanvas.height + 20;
         this.size = Math.random() * 15 + 5;
-        this.speed = Math.random() * 1 + 0.5;
-        this.opacity = Math.random() * 0.5 + 0.2;
+        this.speed = Math.random() * 1.5 + 0.5;
+        this.opacity = Math.random() * 0.6 + 0.2;
     }
     update() {
         this.y -= this.speed;
         if (this.y < -20) this.reset();
     }
     draw() {
-        ctx.fillStyle = `rgba(255, 77, 109, ${this.opacity})`;
-        ctx.font = `${this.size}px serif`;
-        ctx.fillText("❤️", this.x, this.y);
+        hCtx.fillStyle = `rgba(255, 77, 109, ${this.opacity})`;
+        hCtx.font = `${this.size}px serif`;
+        hCtx.fillText("❤️", this.x, this.y);
     }
 }
 
-function initParticles() {
-    for(let i=0; i<30; i++) particles.push(new HeartParticle());
-}
-
-function resetTurtle() {
-  turtle = { x: canvas.width / 2, y: canvas.height * 0.82, a: -90 };
-}
-
 function f(dist, color, width) {
-  queue.push(() => {
-    ctx.beginPath();
-    ctx.strokeStyle = color;
-    ctx.lineWidth = width;
-    ctx.lineCap = "round";
-    ctx.shadowBlur = width > 2 ? 15 : 5;
-    ctx.shadowColor = color;
-    ctx.moveTo(turtle.x, turtle.y);
+  treeQueue.push(() => {
+    tCtx.beginPath();
+    tCtx.strokeStyle = color;
+    tCtx.lineWidth = width;
+    tCtx.lineCap = "round";
+    tCtx.shadowBlur = 10;
+    tCtx.shadowColor = color;
+    tCtx.moveTo(turtle.x, turtle.y);
     
     let rad = turtle.a * (Math.PI / 180);
     let nx = turtle.x + Math.cos(rad) * dist;
     let ny = turtle.y + Math.sin(rad) * dist;
     
-    ctx.lineTo(nx, ny);
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-    
-    turtle.x = nx;
-    turtle.y = ny;
+    tCtx.lineTo(nx, ny);
+    tCtx.stroke();
+    tCtx.shadowBlur = 0;
+    turtle.x = nx; turtle.y = ny;
   });
 }
 
-function l(angle) { queue.push(() => turtle.a -= angle); }
-function r(angle) { queue.push(() => turtle.a += angle); }
+function l(angle) { treeQueue.push(() => turtle.a -= angle); }
+function r(angle) { treeQueue.push(() => turtle.a += angle); }
 
 function dot() {
-  queue.push(() => {
-    ctx.fillStyle = "#ff0040";
-    ctx.shadowBlur = 20;
-    ctx.shadowColor = "#ff0040";
-    ctx.beginPath();
-    ctx.arc(turtle.x, turtle.y, 4, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.shadowBlur = 0;
+  treeQueue.push(() => {
+    tCtx.fillStyle = "#ff0040";
+    tCtx.shadowBlur = 15;
+    tCtx.shadowColor = "#ff0040";
+    tCtx.beginPath();
+    tCtx.arc(turtle.x, turtle.y, 4, 0, Math.PI * 2);
+    tCtx.fill();
+    tCtx.shadowBlur = 0;
   });
 }
 
-function tree(len, depth) {
-  if (len < 12 || depth > 10) {
-    dot();
-    return;
-  }
+function buildTree(len, depth) {
+  if (len < 12 || depth > 10) { dot(); return; }
   let width = Math.max(1, len / 12);
   let color = `hsl(${340 + depth * 3}, 100%, ${60 + depth * 2}%)`;
   f(len, color, width);
   let s = null;
-  queue.push(() => { s = { ...turtle }; });
-  l(25); tree(len * 0.75, depth + 1);
-  queue.push(() => { turtle = { ...s }; });
-  r(50); tree(len * 0.75, depth + 1);
-  queue.push(() => { turtle = { ...s }; });
+  treeQueue.push(() => { s = { ...turtle }; });
+  l(25); buildTree(len * 0.75, depth + 1);
+  treeQueue.push(() => { turtle = { ...s }; });
+  r(50); buildTree(len * 0.75, depth + 1);
+  treeQueue.push(() => { turtle = { ...s }; });
 }
 
 function typeWriter() {
@@ -210,73 +185,29 @@ function typeWriter() {
   }
 }
 
-function animate() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-  
-  // Update and draw floating hearts
-  particles.forEach(p => { p.update(); p.draw(); });
+function mainLoop() {
+  hCtx.clearRect(0, 0, hCanvas.width, hCanvas.height);
+  hearts.forEach(h => { h.update(); h.draw(); });
 
-  // Draw tree branches from queue (multiple steps for speed)
-  for(let i=0; i<4; i++) {
-      if(queue.length > 0) queue.shift()();
+  // Draw 6 segments of tree per frame
+  for(let i=0; i<6; i++) {
+    if(treeQueue.length > 0) treeQueue.shift()();
   }
   
-  // Re-draw already drawn parts of the tree
-  // (In a real turtle app we'd use a second canvas for the tree to avoid clearing it)
-  // For simplicity here, we use the persistent drawing of the tree 
-  // by NOT clearing the whole canvas every frame, but we need clear for particles.
-  // Fix: Draw particles on bottom, tree on top.
-  
-  requestAnimationFrame(animate);
-}
-
-// Separate permanent canvas for tree to keep it while background hearts move
-const treeCanvas = document.createElement('canvas');
-const treeCtx = treeCanvas.getContext('2d');
-function resizeTree(){
-    treeCanvas.width = window.innerWidth;
-    treeCanvas.height = window.innerHeight;
-}
-resizeTree();
-
-function animateEverything() {
-    // 1. Clear main canvas
-    ctx.clearRect(0,0,canvas.width, canvas.height);
-    
-    // 2. Draw floating particles
-    particles.forEach(p => { p.update(); p.draw(); });
-    
-    // 3. Draw tree steps onto the treeCanvas
-    for(let i=0; i<6; i++) {
-        if(queue.length > 0) {
-            let task = queue.shift();
-            // Redirect turtle drawing to treeCtx
-            let originalCtx = window.ctx; 
-            window.ctx = treeCtx;
-            task();
-            window.ctx = originalCtx;
-        }
-    }
-    
-    // 4. Layer the treeCanvas onto the main canvas
-    ctx.drawImage(treeCanvas, 0, 0);
-    
-    requestAnimationFrame(animateEverything);
+  requestAnimationFrame(mainLoop);
 }
 
 document.getElementById("start").onclick = function() {
-  document.getElementById("start").style.opacity = 0;
-  setTimeout(() => document.getElementById("start").remove(), 1500);
+  this.style.opacity = 0;
+  setTimeout(() => this.remove(), 1500);
   document.getElementById("music").play().catch(() => {});
   
-  initParticles();
-  resetTurtle();
-  // Using treeCtx for the actual tree logic inside f() and dot()
-  window.ctx = treeCtx; 
-  tree(canvas.height * 0.18, 0);
-  window.ctx = ctx;
+  for(let i=0; i<40; i++) hearts.push(new Heart());
   
-  animateEverything();
+  turtle = { x: tCanvas.width / 2, y: tCanvas.height * 0.82, a: -90 };
+  buildTree(tCanvas.height * 0.18, 0);
+  
+  mainLoop();
   setTimeout(typeWriter, 1000);
 };
 </script>
