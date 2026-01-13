@@ -1,1 +1,117 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Surbhi ❤️ Love You</title>
+
+<style>
+  body {
+    margin: 0;
+    background: black;
+    overflow: hidden;
+    font-family: monospace;
+  }
+
+  canvas {
+    display: block;
+  }
+
+  .text {
+    position: fixed;
+    bottom: 25px;
+    width: 100%;
+    text-align: center;
+    font-size: 32px;
+    color: #ff4d6d;
+    text-shadow: 0 0 15px red;
+    animation: glow 2s infinite alternate;
+  }
+
+  @keyframes glow {
+    from { opacity: 0.6; }
+    to { opacity: 1; }
+  }
+</style>
+</head>
+
+<body>
+
+<canvas id="canvas"></canvas>
+<div class="text">Surbhi ❤️ love you</div>
+
+<audio autoplay loop>
+  <source src="music.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+
+// 🐢 Turtle State
+let turtle = {
+  x: canvas.width / 2,
+  y: canvas.height,
+  angle: -90,
+  pen: true
+};
+
+ctx.strokeStyle = "#ff5c8a";
+ctx.lineWidth = 2;
+
+function forward(dist) {
+  let rad = turtle.angle * Math.PI / 180;
+  let nx = turtle.x + Math.cos(rad) * dist;
+  let ny = turtle.y + Math.sin(rad) * dist;
+
+  if (turtle.pen) {
+    ctx.beginPath();
+    ctx.moveTo(turtle.x, turtle.y);
+    ctx.lineTo(nx, ny);
+    ctx.stroke();
+  }
+
+  turtle.x = nx;
+  turtle.y = ny;
+}
+
+function left(deg) {
+  turtle.angle -= deg;
+}
+
+function right(deg) {
+  turtle.angle += deg;
+}
+
+function tree(len) {
+  if (len < 10) return;
+
+  forward(len);
+
+  let x = turtle.x;
+  let y = turtle.y;
+  let angle = turtle.angle;
+
+  left(30);
+  tree(len * 0.7);
+
+  turtle.x = x;
+  turtle.y = y;
+  turtle.angle = angle;
+
+  right(30);
+  tree(len * 0.7);
+
+  turtle.x = x;
+  turtle.y = y;
+  turtle.angle = angle;
+}
+
+tree(120);
+</script>
+
+</body>
+</html>
 
