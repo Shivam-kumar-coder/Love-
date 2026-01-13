@@ -2,45 +2,84 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no"/>
 <title>For Surbhi ❤️</title>
 <style>
+  @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@500&display=swap');
+
   html, body {
     margin: 0;
     padding: 0;
-    background: black;
+    background: #050505; /* Very dark grey, almost black */
     overflow: hidden;
-    touch-action: none; /* Prevent zooming on mobile */
-    font-family: 'Courier New', Courier, monospace;
+    font-family: 'Fira Code', monospace; /* Coding font */
+    touch-action: none;
   }
 
   canvas {
     display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+  }
+
+  /* Container for the text at the bottom */
+  #text-container {
+    position: absolute;
+    bottom: 5%; /* Position at bottom */
+    left: 0;
+    width: 100%;
+    text-align: center;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* The glowing text style */
+  #typewriter {
+    font-size: clamp(20px, 5vw, 40px); /* Responsive size */
+    color: #ff4d6d;
+    text-shadow: 0 0 10px #ff4d6d, 0 0 20px #ff0040; /* The Glow Effect */
+    display: inline-block;
+    white-space: nowrap;
+  }
+
+  /* The blinking cursor at the end */
+  .cursor {
+    display: inline-block;
+    width: 2px;
+    height: 1.2em;
+    background-color: #ff4d6d;
+    margin-left: 5px;
+    vertical-align: bottom;
+    animation: blink 1s infinite;
+    box-shadow: 0 0 10px #ff4d6d;
+  }
+
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0; }
   }
 
   #start {
     position: fixed;
     inset: 0;
-    background: black;
+    background: #000;
     color: #ff4d6d;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    font-size: 24px;
+    font-size: 20px;
     z-index: 10;
     cursor: pointer;
     transition: opacity 1s;
   }
-
-  .pulse {
-    animation: pulse 1.5s infinite;
-  }
-
-  @keyframes pulse {
-    0% { transform: scale(1); opacity: 1; }
-    50% { transform: scale(1.1); opacity: 0.8; }
-    100% { transform: scale(1); opacity: 1; }
+  
+  .heart-beat { animation: beat 1s infinite; }
+  @keyframes beat {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
   }
 </style>
 </head>
@@ -48,20 +87,25 @@
 <body>
 
 <div id="start">
-  <div class="pulse">Tap for a surprise ❤️</div>
+  <div class="heart-beat" style="font-size: 40px;">❤️</div>
+  <p style="margin-top:10px">Tap to Open</p>
 </div>
 
 <canvas id="c"></canvas>
+
+<div id="text-container">
+  <span id="typewriter"></span><span class="cursor"></span>
+</div>
 
 <audio id="music" loop>
   <source src="music.mp3" type="audio/mpeg">
 </audio>
 
 <script>
+// --- Canvas Setup ---
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 
-// Responsive Canvas
 function resize(){
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
@@ -69,16 +113,15 @@ function resize(){
 resize();
 window.addEventListener("resize", resize);
 
-// Turtle State
-let turtle = { x: 0, y: 0, a: -90 }; // Angle -90 is straight up
+// --- Configuration ---
+let turtle = { x: 0, y: 0, a: -90 };
 let queue = [];
+const message = "Surbhi ❤️ love you"; // The text to type
+let textIndex = 0;
 
-// Configuration
-ctx.lineCap = "round";
-
-// --- Turtle Helper Functions ---
+// --- Turtle Functions ---
 function resetTurtle() {
-  turtle = { x: canvas.width / 2, y: canvas.height * 0.85, a: -90 };
+  turtle = { x: canvas.width / 2, y: canvas.height * 0.80, a: -90 }; // Tree starts slightly higher
 }
 
 function f(dist, color, width) {
@@ -86,9 +129,9 @@ function f(dist, color, width) {
     ctx.beginPath();
     ctx.strokeStyle = color;
     ctx.lineWidth = width;
+    ctx.lineCap = "round";
     ctx.moveTo(turtle.x, turtle.y);
     
-    // Calculate new position
     let rad = turtle.a * (Math.PI / 180);
     let nx = turtle.x + Math.cos(rad) * dist;
     let ny = turtle.y + Math.sin(rad) * dist;
@@ -96,7 +139,6 @@ function f(dist, color, width) {
     ctx.lineTo(nx, ny);
     ctx.stroke();
     
-    // Update turtle position
     turtle.x = nx;
     turtle.y = ny;
   });
@@ -107,98 +149,85 @@ function r(angle) { queue.push(() => turtle.a += angle); }
 
 function dot() {
   queue.push(() => {
-    ctx.fillStyle = "#ff0040"; // Bright red/pink tip
+    ctx.fillStyle = "#ff0040";
     ctx.beginPath();
     ctx.arc(turtle.x, turtle.y, 3, 0, Math.PI * 2);
     ctx.fill();
-    // Add a glow effect
-    ctx.shadowBlur = 10;
+    ctx.shadowBlur = 15;
     ctx.shadowColor = "#ff0040";
     ctx.fill();
     ctx.shadowBlur = 0;
   });
 }
 
-// --- Recursive Tree Logic ---
+// --- Recursive Tree ---
 function tree(len, depth) {
   if (len < 10 || depth > 10) {
     dot();
     return;
   }
 
-  // Branch thickness gets thinner as we go up
   let width = Math.max(0.5, len / 15);
-  // Color gradient from dark red to pink
   let color = `hsl(${340 + depth * 2}, 80%, ${50 + depth * 3}%)`;
 
   f(len, color, width);
 
-  // Save state (virtual stack)
   let savedState = null;
   queue.push(() => { savedState = { ...turtle }; });
 
   l(25);
   tree(len * 0.75, depth + 1);
 
-  // Restore state
   queue.push(() => { turtle = { ...savedState }; });
 
-  r(50); // Asymmetrical tree looks more organic (like the screenshot)
+  r(50);
   tree(len * 0.75, depth + 1);
 
-  // Restore state
   queue.push(() => { turtle = { ...savedState }; });
 }
 
-// --- Text Animation ---
-function drawText() {
-  queue.push(() => {
-    ctx.font = "bold 30px 'Courier New', monospace";
-    ctx.fillStyle = "#ff4d6d";
-    ctx.textAlign = "center";
-    ctx.shadowColor = "#ff4d6d";
-    ctx.shadowBlur = 20;
-    ctx.fillText("Surbhi ❤️ Love You", canvas.width / 2, canvas.height * 0.95);
-    ctx.shadowBlur = 0;
-  });
+// --- Typewriter Effect Function ---
+function typeWriter() {
+  if (textIndex < message.length) {
+    document.getElementById("typewriter").innerHTML += message.charAt(textIndex);
+    textIndex++;
+    setTimeout(typeWriter, 150); // Speed of typing (150ms per letter)
+  }
 }
 
-// --- Animation Loop ---
+// --- Main Animation Loop ---
 function animate() {
-  // Process up to 5 steps per frame to speed up the drawing slightly
-  let speed = 5; 
-  for(let i=0; i<speed; i++){
+  // Draw 5 turtle steps per frame for speed
+  for(let i=0; i<5; i++){
     if (queue.length > 0) {
       let task = queue.shift();
       task();
     }
   }
-  
+
   if (queue.length > 0) {
     requestAnimationFrame(animate);
+  } else {
+    // Once tree is finished, start typing the text
+    setTimeout(typeWriter, 500);
   }
 }
 
-// --- Initialization ---
+// --- Start Interaction ---
 document.getElementById("start").onclick = function() {
   const startScreen = document.getElementById("start");
   const audio = document.getElementById("music");
   
-  // Fade out start screen
   startScreen.style.opacity = 0;
   setTimeout(() => startScreen.remove(), 1000);
 
-  // Try to play music
+  // Play music
   audio.volume = 0.5;
-  audio.play().catch(e => console.log("Audio requires interaction or file missing"));
+  audio.play().catch(console.error);
 
-  // Build the Animation Queue
+  // Start Tree
   resetTurtle();
-  // Calculate initial tree size based on screen height
-  tree(canvas.height * 0.22, 0); 
-  drawText();
-
-  // Start Animating
+  tree(canvas.height * 0.20, 0); 
   animate();
 };
 
