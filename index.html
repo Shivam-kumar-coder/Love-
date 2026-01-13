@@ -5,117 +5,142 @@
 <title>Surbhi ❤️ Love You</title>
 
 <style>
-  body {
-    margin: 0;
-    background: black;
-    overflow: hidden;
-    font-family: monospace;
-  }
+body {
+  margin: 0;
+  background: black;
+  overflow: hidden;
+  font-family: monospace;
+}
 
-  canvas {
-    display: block;
-  }
+canvas {
+  display: block;
+}
 
-  .text {
-    position: fixed;
-    bottom: 20px;
-    width: 100%;
-    text-align: center;
-    font-size: 32px;
-    color: #ff4d6d;
-    text-shadow: 0 0 15px red;
-  }
+#start {
+  position: fixed;
+  inset: 0;
+  background: black;
+  color: #ff4d6d;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+  cursor: pointer;
+  z-index: 10;
+}
+
+.text {
+  position: fixed;
+  bottom: 25px;
+  width: 100%;
+  text-align: center;
+  color: #ff4d6d;
+  font-size: 28px;
+}
 </style>
 </head>
 
 <body>
 
+<div id="start">Click to Start ❤️</div>
 <canvas id="canvas"></canvas>
-<div class="text">Surbhi ❤️ love you</div>
 
-<audio autoplay loop>
+<audio id="music" loop>
   <source src="music.mp3" type="audio/mpeg">
 </audio>
 
 <script>
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
-
 canvas.width = innerWidth;
 canvas.height = innerHeight;
 
-ctx.strokeStyle = "#ff5c8a";
 ctx.lineWidth = 2;
+ctx.lineCap = "round";
 
-// 🐢 Turtle
-let turtle = {
-  x: canvas.width / 2,
-  y: canvas.height,
-  angle: -90
-};
+let turtle = { x: canvas.width/2, y: canvas.height-50, angle: -90 };
+let queue = [];
 
-// 🧠 Command queue (this makes it animated)
-let commands = [];
-
-function forward(dist) {
-  commands.push(() => {
-    let rad = turtle.angle * Math.PI / 180;
-    let nx = turtle.x + Math.cos(rad) * dist;
-    let ny = turtle.y + Math.sin(rad) * dist;
-
+function forward(d, color="#ff5c8a") {
+  queue.push(() => {
+    ctx.strokeStyle = color;
+    let r = turtle.angle * Math.PI/180;
+    let nx = turtle.x + Math.cos(r)*d;
+    let ny = turtle.y + Math.sin(r)*d;
     ctx.beginPath();
     ctx.moveTo(turtle.x, turtle.y);
     ctx.lineTo(nx, ny);
     ctx.stroke();
-
     turtle.x = nx;
     turtle.y = ny;
   });
 }
 
-function left(a) {
-  commands.push(() => turtle.angle -= a);
-}
-
-function right(a) {
-  commands.push(() => turtle.angle += a);
-}
-
-function tree(len) {
-  if (len < 8) return;
-
-  forward(len);
-
-  commands.push(() => {
-    const x = turtle.x, y = turtle.y, a = turtle.angle;
-
-    left(30);
-    tree(len * 0.7);
-
-    commands.push(() => {
-      turtle.x = x; turtle.y = y; turtle.angle = a;
-    });
-
-    right(30);
-    tree(len * 0.7);
-
-    commands.push(() => {
-      turtle.x = x; turtle.y = y; turtle.angle = a;
-    });
+function dot(size=3) {
+  queue.push(() => {
+    ctx.fillStyle = "#ff9aa2";
+    ctx.beginPath();
+    ctx.arc(turtle.x, turtle.y, size, 0, Math.PI*2);
+    ctx.fill();
   });
 }
 
-tree(120);
+function left(a){ queue.push(()=>turtle.angle-=a); }
+function right(a){ queue.push(()=>turtle.angle+=a); }
 
-// 🎬 Animation loop
-function animate() {
-  if (commands.length > 0) {
-    commands.shift()();
+function tree(len, depth=0){
+  if(len < 12){
+    dot(3);
+    return;
+  }
+
+  forward(len, `hsl(${330-depth*5},100%,70%)`);
+
+  let x=turtle.x, y=turtle.y, a=turtle.angle;
+
+  left(25);
+  tree(len*0.75, depth+1);
+
+  queue.push(()=>{turtle.x=x; turtle.y=y; turtle.angle=a});
+
+  right(50);
+  tree(len*0.75, depth+1);
+
+  queue.push(()=>{turtle.x=x; turtle.y=y; turtle.angle=a});
+}
+
+// 🖊️ Draw text using turtle
+function drawText(text){
+  turtle.x = canvas.width/2 - 150;
+  turtle.y = canvas.height - 10;
+  turtle.angle = 0;
+
+  for(let ch of text){
+    forward(20);
+    right(90); forward(10); left(90);
+    forward(10);
+    left(90); forward(10); right(90);
+    forward(20);
+    right(180);
+    forward(40);
+    right(180);
+  }
+}
+
+function animate(){
+  if(queue.length){
+    queue.shift()();
     requestAnimationFrame(animate);
   }
 }
 
-animate();
+document.getElementById("start").onclick = () => {
+  document.getElementById("start").remove();
+  document.getElementById("music").play();
+  tree(120);
+  drawText("Surbhi ❤️ love you");
+  animate();
+};
 </script>
 
 </body>
