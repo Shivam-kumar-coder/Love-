@@ -18,18 +18,12 @@
 
   .text {
     position: fixed;
-    bottom: 25px;
+    bottom: 20px;
     width: 100%;
     text-align: center;
     font-size: 32px;
     color: #ff4d6d;
     text-shadow: 0 0 15px red;
-    animation: glow 2s infinite alternate;
-  }
-
-  @keyframes glow {
-    from { opacity: 0.6; }
-    to { opacity: 1; }
   }
 </style>
 </head>
@@ -47,71 +41,82 @@
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
 
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-
-// 🐢 Turtle State
-let turtle = {
-  x: canvas.width / 2,
-  y: canvas.height,
-  angle: -90,
-  pen: true
-};
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 
 ctx.strokeStyle = "#ff5c8a";
 ctx.lineWidth = 2;
 
-function forward(dist) {
-  let rad = turtle.angle * Math.PI / 180;
-  let nx = turtle.x + Math.cos(rad) * dist;
-  let ny = turtle.y + Math.sin(rad) * dist;
+// 🐢 Turtle
+let turtle = {
+  x: canvas.width / 2,
+  y: canvas.height,
+  angle: -90
+};
 
-  if (turtle.pen) {
+// 🧠 Command queue (this makes it animated)
+let commands = [];
+
+function forward(dist) {
+  commands.push(() => {
+    let rad = turtle.angle * Math.PI / 180;
+    let nx = turtle.x + Math.cos(rad) * dist;
+    let ny = turtle.y + Math.sin(rad) * dist;
+
     ctx.beginPath();
     ctx.moveTo(turtle.x, turtle.y);
     ctx.lineTo(nx, ny);
     ctx.stroke();
-  }
 
-  turtle.x = nx;
-  turtle.y = ny;
+    turtle.x = nx;
+    turtle.y = ny;
+  });
 }
 
-function left(deg) {
-  turtle.angle -= deg;
+function left(a) {
+  commands.push(() => turtle.angle -= a);
 }
 
-function right(deg) {
-  turtle.angle += deg;
+function right(a) {
+  commands.push(() => turtle.angle += a);
 }
 
 function tree(len) {
-  if (len < 10) return;
+  if (len < 8) return;
 
   forward(len);
 
-  let x = turtle.x;
-  let y = turtle.y;
-  let angle = turtle.angle;
+  commands.push(() => {
+    const x = turtle.x, y = turtle.y, a = turtle.angle;
 
-  left(30);
-  tree(len * 0.7);
+    left(30);
+    tree(len * 0.7);
 
-  turtle.x = x;
-  turtle.y = y;
-  turtle.angle = angle;
+    commands.push(() => {
+      turtle.x = x; turtle.y = y; turtle.angle = a;
+    });
 
-  right(30);
-  tree(len * 0.7);
+    right(30);
+    tree(len * 0.7);
 
-  turtle.x = x;
-  turtle.y = y;
-  turtle.angle = angle;
+    commands.push(() => {
+      turtle.x = x; turtle.y = y; turtle.angle = a;
+    });
+  });
 }
 
 tree(120);
+
+// 🎬 Animation loop
+function animate() {
+  if (commands.length > 0) {
+    commands.shift()();
+    requestAnimationFrame(animate);
+  }
+}
+
+animate();
 </script>
 
 </body>
 </html>
-
