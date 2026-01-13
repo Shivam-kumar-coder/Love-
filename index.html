@@ -3,39 +3,54 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Surbhi ❤️ Love You</title>
-
+<title>For Surbhi ❤️</title>
 <style>
-html, body {
-  margin: 0;
-  padding: 0;
-  background: black;
-  overflow: hidden;
-  touch-action: manipulation;
-}
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: black;
+    overflow: hidden;
+    touch-action: none; /* Prevent zooming on mobile */
+    font-family: 'Courier New', Courier, monospace;
+  }
 
-canvas {
-  display: block;
-}
+  canvas {
+    display: block;
+  }
 
-#start {
-  position: fixed;
-  inset: 0;
-  background: black;
-  color: #ff4d6d;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 26px;
-  font-family: monospace;
-  z-index: 10;
-}
+  #start {
+    position: fixed;
+    inset: 0;
+    background: black;
+    color: #ff4d6d;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    z-index: 10;
+    cursor: pointer;
+    transition: opacity 1s;
+  }
+
+  .pulse {
+    animation: pulse 1.5s infinite;
+  }
+
+  @keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.1); opacity: 0.8; }
+    100% { transform: scale(1); opacity: 1; }
+  }
 </style>
 </head>
 
 <body>
 
-<div id="start">Tap to Start ❤️</div>
+<div id="start">
+  <div class="pulse">Tap for a surprise ❤️</div>
+</div>
+
 <canvas id="c"></canvas>
 
 <audio id="music" loop>
@@ -46,99 +61,147 @@ canvas {
 const canvas = document.getElementById("c");
 const ctx = canvas.getContext("2d");
 
+// Responsive Canvas
 function resize(){
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
 }
 resize();
-addEventListener("resize", resize);
+window.addEventListener("resize", resize);
 
-// Turtle
-let turtle = { x: canvas.width/2, y: canvas.height*0.9, a: -90 };
+// Turtle State
+let turtle = { x: 0, y: 0, a: -90 }; // Angle -90 is straight up
 let queue = [];
 
-ctx.lineWidth = Math.max(1.5, innerWidth/300);
+// Configuration
 ctx.lineCap = "round";
 
-// Turtle commands
-function f(d, col){
+// --- Turtle Helper Functions ---
+function resetTurtle() {
+  turtle = { x: canvas.width / 2, y: canvas.height * 0.85, a: -90 };
+}
+
+function f(dist, color, width) {
   queue.push(() => {
-    ctx.strokeStyle = col;
-    let r = turtle.a * Math.PI/180;
-    let nx = turtle.x + Math.cos(r)*d;
-    let ny = turtle.y + Math.sin(r)*d;
     ctx.beginPath();
+    ctx.strokeStyle = color;
+    ctx.lineWidth = width;
     ctx.moveTo(turtle.x, turtle.y);
+    
+    // Calculate new position
+    let rad = turtle.a * (Math.PI / 180);
+    let nx = turtle.x + Math.cos(rad) * dist;
+    let ny = turtle.y + Math.sin(rad) * dist;
+    
     ctx.lineTo(nx, ny);
     ctx.stroke();
-    turtle.x = nx; turtle.y = ny;
+    
+    // Update turtle position
+    turtle.x = nx;
+    turtle.y = ny;
   });
 }
 
-function l(x){ queue.push(()=>turtle.a -= x); }
-function r(x){ queue.push(()=>turtle.a += x); }
+function l(angle) { queue.push(() => turtle.a -= angle); }
+function r(angle) { queue.push(() => turtle.a += angle); }
 
-function dot(){
-  queue.push(()=>{
-    ctx.fillStyle = "#ff9aa2";
+function dot() {
+  queue.push(() => {
+    ctx.fillStyle = "#ff0040"; // Bright red/pink tip
     ctx.beginPath();
-    ctx.arc(turtle.x, turtle.y, 2.5, 0, Math.PI*2);
+    ctx.arc(turtle.x, turtle.y, 3, 0, Math.PI * 2);
     ctx.fill();
+    // Add a glow effect
+    ctx.shadowBlur = 10;
+    ctx.shadowColor = "#ff0040";
+    ctx.fill();
+    ctx.shadowBlur = 0;
   });
 }
 
-// Tree (SCREENSHOT STYLE)
-function tree(len, depth=0){
-  if(len < 10){
+// --- Recursive Tree Logic ---
+function tree(len, depth) {
+  if (len < 10 || depth > 10) {
     dot();
     return;
   }
 
-  f(len, `hsl(${330-depth*6},100%,70%)`);
+  // Branch thickness gets thinner as we go up
+  let width = Math.max(0.5, len / 15);
+  // Color gradient from dark red to pink
+  let color = `hsl(${340 + depth * 2}, 80%, ${50 + depth * 3}%)`;
 
-  let s = { ...turtle };
+  f(len, color, width);
+
+  // Save state (virtual stack)
+  let savedState = null;
+  queue.push(() => { savedState = { ...turtle }; });
 
   l(25);
-  tree(len*0.75, depth+1);
-  queue.push(()=>turtle={...s});
+  tree(len * 0.75, depth + 1);
 
-  r(50);
-  tree(len*0.75, depth+1);
-  queue.push(()=>turtle={...s});
+  // Restore state
+  queue.push(() => { turtle = { ...savedState }; });
+
+  r(50); // Asymmetrical tree looks more organic (like the screenshot)
+  tree(len * 0.75, depth + 1);
+
+  // Restore state
+  queue.push(() => { turtle = { ...savedState }; });
 }
 
-// Draw text (simple handwritten)
-function drawText(){
-  turtle.x = canvas.width*0.25;
-  turtle.y = canvas.height*0.95;
-  turtle.a = 0;
-
-  "Surbhi ❤️ love you".split("").forEach(()=>{
-    f(15,"#ff4d6d"); r(90); f(8,"#ff4d6d");
-    l(90); f(8,"#ff4d6d");
-    l(90); f(8,"#ff4d6d");
-    r(90); f(15,"#ff4d6d");
-    r(180); f(30,"#ff4d6d"); r(180);
+// --- Text Animation ---
+function drawText() {
+  queue.push(() => {
+    ctx.font = "bold 30px 'Courier New', monospace";
+    ctx.fillStyle = "#ff4d6d";
+    ctx.textAlign = "center";
+    ctx.shadowColor = "#ff4d6d";
+    ctx.shadowBlur = 20;
+    ctx.fillText("Surbhi ❤️ Love You", canvas.width / 2, canvas.height * 0.95);
+    ctx.shadowBlur = 0;
   });
 }
 
-// Animation loop
-function animate(){
-  if(queue.length){
-    queue.shift()();
+// --- Animation Loop ---
+function animate() {
+  // Process up to 5 steps per frame to speed up the drawing slightly
+  let speed = 5; 
+  for(let i=0; i<speed; i++){
+    if (queue.length > 0) {
+      let task = queue.shift();
+      task();
+    }
+  }
+  
+  if (queue.length > 0) {
     requestAnimationFrame(animate);
   }
 }
 
-// Start (mobile-friendly)
-document.getElementById("start").onclick = () => {
-  document.getElementById("start").remove();
-  document.getElementById("music").play();
-  tree(canvas.height*0.25);
+// --- Initialization ---
+document.getElementById("start").onclick = function() {
+  const startScreen = document.getElementById("start");
+  const audio = document.getElementById("music");
+  
+  // Fade out start screen
+  startScreen.style.opacity = 0;
+  setTimeout(() => startScreen.remove(), 1000);
+
+  // Try to play music
+  audio.volume = 0.5;
+  audio.play().catch(e => console.log("Audio requires interaction or file missing"));
+
+  // Build the Animation Queue
+  resetTurtle();
+  // Calculate initial tree size based on screen height
+  tree(canvas.height * 0.22, 0); 
   drawText();
+
+  // Start Animating
   animate();
 };
-</script>
 
+</script>
 </body>
 </html>
